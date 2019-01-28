@@ -296,13 +296,13 @@ int main(int argc,char** argv){
         printf("Error: %s\n", cudaGetErrorString(err));
     }
     cudaMemcpy(perblockqpointsDev,perblockqpoints,numberOfBlocks*sizeof(int),cudaMemcpyHostToDevice);
-    Point* knn_Dev;
+    Point* knn_Dev=NULL;
     err=cudaMalloc(&knn_Dev,numberOfqpoints*sizeof(Point));
     if (err != cudaSuccess)
     {
         printf("Error: %s\n", cudaGetErrorString(err));
     }
-    float* knnDist_Dev;
+    float* knnDist_Dev=NULL;
     err=cudaMalloc(&knnDist_Dev,numberOfqpoints*sizeof(float));
     if (err != cudaSuccess)
     {
@@ -310,7 +310,7 @@ int main(int argc,char** argv){
     }
 
 
-    knn<<< dim3(dimOfGrid,dimOfGrid,dimOfGrid) ,1024>>>(arrangecpointsDev,arrangeqpointsDev,perblockcpointsDev,perblockqpointsDev,startingpointDev_c,startingpointDev_q,knn_Dev,knnDist_Dev);
+    knn<<<dim3(dimOfGrid,dimOfGrid,dimOfGrid) ,1024>>>(arrangecpointsDev,arrangeqpointsDev,perblockcpointsDev,perblockqpointsDev,startingpointDev_c,startingpointDev_q,knn_Dev,knnDist_Dev);
     gettimeofday(&end_t,NULL);
     par_time = (double)((end_t.tv_usec - start_t.tv_usec)/1.0e6
                         + end_t.tv_sec - start_t.tv_sec);
@@ -333,6 +333,7 @@ int main(int argc,char** argv){
     free(knn_Dist);
 
     cudaDeviceReset();
+
     return 0;
 }
 
