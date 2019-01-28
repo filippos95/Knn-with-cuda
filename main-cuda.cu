@@ -1,3 +1,7 @@
+
+
+
+
 //
 // Created by Filippos Kasioulis on 25/01/2019.
 //
@@ -9,6 +13,7 @@
 #include <math.h>
 #include <string.h>
 #include <cuda.h>
+#include <sys/time.h>
 
 
 typedef  struct  {
@@ -21,7 +26,7 @@ typedef  struct  {
 
 
 
-__global__ void knn(float* allcPoints,float* allqPoints,int * perBlockcPoints,int* perBlockqPoints,int* startingPointc,int* startingPointq,int* knn_dist,int* knn){
+__global__ void knn(Point* allcPoints,Point* allqPoints,int* perBlockcPoints,int* perBlockqPoints,int* startingPointc,int* startingPointq,Point* knn,float* knn_dist){
 
     __shared__ Point shrMem[1024];
     int blockId=blockIdx.x+blockIdx.y*gridDim.x+blockIdx.z*gridDim.x*gridDim.y;
@@ -30,13 +35,13 @@ __global__ void knn(float* allcPoints,float* allqPoints,int * perBlockcPoints,in
     Point cpoint;
     int c,q;
     int number_qpoints=perBlockqPoints[blockId];
-    int number_cpoints=perBlcokcPoints[blockId];
-    int i=threadId.x;
+    int number_cpoints=perBlockcPoints[blockId];
+    int i=threadIdx.x;
 
 
     if(i<number_cpoints){
-         c=i+startingPoint[blockId];
-         shrMem[threadId.x]=allcPoints[c];
+        c=i+startingPointc[blockId];
+        shrMem[threadIdx.x]=allcPoints[c];
 
     }
     __syncthreads();
@@ -44,7 +49,7 @@ __global__ void knn(float* allcPoints,float* allqPoints,int * perBlockcPoints,in
     if(i<number_qpoints) {
 
         q = i + startingPointq[blockId];
-        qpoint = allqpoints[q];
+        qpoint = allqPoints[q];
         float tempDist = 0;
         float minCanDist=999;
         Point minCanPoint;
@@ -55,9 +60,9 @@ __global__ void knn(float* allcPoints,float* allqPoints,int * perBlockcPoints,in
             tempDist = sqrt(tempDist);
 
 
-            if (tempDist < minCanDis) {
-                minCanDis = tempDist;
-                minCanPoint = shrMem[c];
+            if (tempDist < minCanDist) {
+                minCanDist = tempDist;
+                minCanPoint = shrMem[i];
 
             }
         }
@@ -69,84 +74,85 @@ __global__ void knn(float* allcPoints,float* allqPoints,int * perBlockcPoints,in
     //float minBounds = 999;
     //float tempDistancex = qpoints[q].x-(block_length * blockId.x);
     //if ((tempDistancex > block_length - tempDistancex)&&(blockId.x<gridDim.x-1))
-      //  tempDistancex = block_length - tempDistancex;
+    //  tempDistancex = block_length - tempDistancex;
     //min_from_bounds = tempDistancex;
     //float tempDistancey = qpoints[q].y-(block_length * blockId.y);
     //if ((tempDistancey > block_length - tempDistancey)&&(blockId.y<gridDim.y-1))
-     //   tempDistancey = block_length - tempDistancey;
+    //   tempDistancey = block_length - tempDistancey;
     //if (tempDistancey < min_from_bounds)
-        //min_from_bounds = tempDistancey;
+    //min_from_bounds = tempDistancey;
 
-   // float tempDistancez = qpoints[q].z-(block_length * blockDim.z);
+    // float tempDistancez = qpoints[q].z-(block_length * blockDim.z);
     //if ((tempDistancez > block_length - tempDistancez)&&(blockId.z<gridDim.z-1))
-        //tempDistancez = block_length - tempDistancez;
-   // if (tempDistancez < min_from_bounds)
-       // min_from_bounds = tempDistancez;
+    //tempDistancez = block_length - tempDistancez;
+    // if (tempDistancez < min_from_bounds)
+    // min_from_bounds = tempDistancez;
 
 
-        int neighbors[27];
-        int size=0;
-        for (int i = -1; i < 2; i++) {
-            for (int j = -1; j < 2; j++) {
-                for (int k = -1; k < 2; k++) {
-                    if (!(i == 0 & j == 0 & k == 0)) {
-                        int tempx = blockIdx.x+i;
-                        int tempy = blockIdx.y+j;
-                        int tempz = blockIdx.z+k;
-                        if (!(tempx < 0 | tempy < 0 | tempz < 0 | tempx >= gridDim.x | tempz >= gridDim.y | tempy >= gridDim.z)) {
-                            neighbors[size]=tempx+tempy*gridDim+tempz*gridDim*gridDim;
-                            size++;
-                        }
+    int neighbors[27];
+    int size=0;
+    for (int i = -1; i < 2; i++) {
+        for (int j = -1; j < 2; j++) {
+            for (int k = -1; k < 2; k++) {
+                if (!(i == 0 & j == 0 & k == 0)) {
+                    int tempx = blockIdx.x+i;
+                    int tempy = blockIdx.y+j;
+                    int tempz = blockIdx.z+k;
+                    if (!(tempx < 0 | tempy < 0 | tempz < 0 | tempx >= gridDim.x | tempz >= gridDim.y | tempy >= gridDim.z))                          {
+                        neighbors[size]=tempx+tempy*gridDim.x+tempz*gridDim.x*gridDim.y;
+                        size++;
                     }
                 }
             }
         }
-     float minNeigDist=999;
-     Point minNeig;
-     for (int k=0;k<size;k++){
+    }
+    float minNeigDist=999;
+    Point minNeig;
+    for (int k=0;k<size;k++){
 
-     int neighborId=neighbors[k];
-     number_cpoints=perBlockcPoints[neighborId];
-     number_qpoints=perBlockqPoints[neighborId];
+        int neighborId=neighbors[k];
+        number_cpoints=perBlockcPoints[neighborId];
+        number_qpoints=perBlockqPoints[neighborId];
 
-     if(i<number_cpoints]){
-         c=i+startingPointc[neighborId];
-         shrMem[i]=allcPoints[c];
-     }
-     __syncthreads();
-     if(i<number_qpoints){
-      q=i+startingPointq[neighborId];
-      qpoint=allqPoints[q];
-      for(int c=0;c<number_qpoints;c++){
+        if(i<number_cpoints){
+            c=i+startingPointc[neighborId];
+            shrMem[i]=allcPoints[c];
+        }
+        __syncthreads();
+        if(i<number_qpoints){
+            q=i+startingPointq[neighborId];
+            qpoint=allqPoints[q];
+            float tempDist;
+            for(int k=0;k<number_qpoints;k++){
 
-          tempDist = pow((shrMem[c].x - qpoint.x), 2) + pow((shrMem[c].y - qpoint.y), 2) +
-                     pow((shrMem[c].z - qpoint.z), 2);
-          tempDist = sqrt(tempDist);
+                tempDist = pow((shrMem[k].x - qpoint.x), 2) + pow((shrMem[k].y - qpoint.y), 2) +
+                           pow((shrMem[k].z - qpoint.z), 2);
+                tempDist = sqrt(tempDist);
 
-          if (tempDist < minNeigDist) {
-              minNeigDis = tempDist;
-              minNeig =shrMem[c];
-          }
-      }
-     }
+                if (tempDist < minNeigDist) {
+                    minNeigDist = tempDist;
+                    minNeig =shrMem[k];
+                }
+            }
+        }
     }
     if(i<number_qpoints) {
-        if (minNeigDist < knn[q]) {
-            knn[q] = minNeigDist;
+        if (minNeigDist < knn_dist[q]) {
+            knn_dist[q] = minNeigDist;
             knn[q] = minNeig;
         }
     }
- }
+}
 
 
-void PrintPoints(struct Point *arr,int number){
+void PrintPoints(Point *arr,int number){
     for (int i = 0; i < number; i++) {
 
         printf("Point %d: x=%f y=%f z=%f \n", i,arr[i].x, arr[i].y, arr[i].z);
     }
 }
 
-void PrintKnn(struct Point *arr,struct Point *arr2,int number ) {
+void PrintKnn( Point *arr, Point *arr2,int number ) {
     for (int i = 0; i < number; i++) {
 
         printf("Nearest to Point %d: x=%f y=%f z=%f--->  x=%f y=%f z=%f\n", i,arr[i].x, arr[i].y, arr[i].z,arr2[i].x, arr2[i].y, arr2[i].z);
@@ -154,7 +160,7 @@ void PrintKnn(struct Point *arr,struct Point *arr2,int number ) {
     }
 }
 
-void generatePoints( struct Point* arr ,int number,int seed){
+void generatePoints(Point* arr ,int number,int seed){
     srand(seed);// randomize seed
     for (int i=0;i<number;i++){
         arr[i].x=((float)rand()/(float)RAND_MAX);
@@ -212,27 +218,28 @@ int main(int argc,char** argv){
     dimOfGrid = pow(2, dimOfGrid);
     int numberOfBlocks = pow(dimOfGrid, 3);
     int numberOfqpoints = numberOfcPoints;
-    struct Point *cpoints = malloc(numberOfcPoints * sizeof(struct Point));
-    struct Point *qpoints = malloc(numberOfqpoints * sizeof(struct Point));
+    Point* cpoints = (Point*)malloc(numberOfcPoints * sizeof( Point));
+    Point* qpoints = (Point*)malloc(numberOfqpoints * sizeof( Point));
 
-    Point *knn = malloc(numberOfqpoints * sizeof( Point));
-    Point *arrangecpoints=malloc(numberOfcPoints*sizeof( Point));
-    Point *arrangeqpoints==malloc(numberOfqPoints*sizeof(Point));
-    int *pointsctoblock = malloc(numberOfcPoints * sizeof(int));
-    int *pointsqtoblock = malloc(numberOfqpoints * sizeof(int));
-    int *perblockcpoints = malloc(numberOfBlocks * sizeof(int));
-    int *perblockqpoints = malloc(numberOfBlocks * sizeof(int));
-    int *startingpoint_c=malloc(numberOfBlocks*sizeof(int));
-    int *startingpoint_q=malloc(numberOfBlocks*sizeof(int));
-    float *knn_Dist=malloc(numberOfqpoints*sizeof(float))
+    Point* knn = (Point*)malloc(numberOfqpoints * sizeof( Point));
+    Point* arrangecpoints=(Point*)malloc(numberOfcPoints*sizeof( Point));
+    Point* arrangeqpoints=(Point*)malloc(numberOfqpoints*sizeof(Point));
+    int* pointsctoblock = (int*)malloc(numberOfcPoints * sizeof(int));
+    int* pointsqtoblock = (int*)malloc(numberOfqpoints * sizeof(int));
+    int* perblockcpoints = (int*)malloc(numberOfBlocks * sizeof(int));
+    int* perblockqpoints = (int*)malloc(numberOfBlocks * sizeof(int));
+    int* startingpoint_c=(int*)malloc(numberOfBlocks*sizeof(int));
+    int* startingpoint_q=(int*)malloc(numberOfBlocks*sizeof(int));
+    float* knn_Dist=(float*)malloc(numberOfqpoints*sizeof(float));
 
-    generatePoints(cpoints, numberOfcPoints,1);
-    generatePoints(qpoints, numberOfqpoints,2);
+    generatePoints(cpoints,numberOfcPoints,1);
+    generatePoints(qpoints,numberOfqpoints,2);
     //printf("-------------C  POINTS-----------\n");
     //PrintPoints(cpoints,numberOfcPoints);
     //printf("-------------Q POINTS------------\n");
     //PrintPoints(qpoints,numberOfqpoints);
     struct timeval start_t,end_t;
+    double par_time;
     gettimeofday(&start_t,NULL);
     float block_length = ((float) 1) / ((float) dimOfGrid);
 
@@ -244,27 +251,29 @@ int main(int argc,char** argv){
     free(pointsctoblock);
     free(pointsqtoblock);
     cudaError_t err;
+    Point* arrangecpointsDev;
     err=cudaMalloc(&arrangecpointsDev,numberOfcPoints*sizeof(Point));
     if (err != cudaSuccess)                             // `cudaSuccess` is provided by CUDA.
     {
         printf("Error: %s\n", cudaGetErrorString(err)); // `cudaGetErrorString` is provided by CUDA.
     }
-    cudaMemcpy=(arrangecpointsDev,arrangecpoints,numberOfcPoints*sizeof(Point),cudaMemcpyHostToDevice);
-
-    err=cudaMalloc(&arrangeqpointsDev,numberOfcPoints*sizeof(Point));
+    cudaMemcpy(arrangecpointsDev,arrangecpoints,numberOfcPoints*sizeof(Point),cudaMemcpyHostToDevice);
+    Point* arrangeqpointsDev;
+    err=cudaMalloc(&arrangeqpointsDev,numberOfqpoints*sizeof(Point));
     if (err != cudaSuccess)                             // `cudaSuccess` is provided by CUDA.
     {
         printf("Error: %s\n", cudaGetErrorString(err)); // `cudaGetErrorString` is provided by CUDA.
     }
-    cudaMemcpy=(arrangeqpointsDev,arrangeqpoints,numberOfqPoints*sizeof(Point),cudaMemcpyHostToDevice);
+    cudaMemcpy(arrangeqpointsDev,arrangeqpoints,numberOfqpoints*sizeof(Point),cudaMemcpyHostToDevice);
 
-
+    int* startingpointDev_c;
     err=cudaMalloc(&startingpointDev_c,numberOfBlocks*sizeof(int));
     if (err != cudaSuccess)                             // `cudaSuccess` is provided by CUDA.
     {
         printf("Error: %s\n", cudaGetErrorString(err)); // `cudaGetErrorString` is provided by CUDA.
     }
     cudaMemcpy(startingpointDev_c,startingpoint_c,numberOfBlocks*sizeof(int),cudaMemcpyHostToDevice);
+    int* startingpointDev_q;
 
     err=cudaMalloc(&startingpointDev_q,numberOfBlocks*sizeof(int));
     if (err != cudaSuccess)                             // `cudaSuccess` is provided by CUDA.
@@ -273,42 +282,41 @@ int main(int argc,char** argv){
     }
     cudaMemcpy(startingpointDev_q,startingpoint_q,numberOfBlocks*sizeof(int),cudaMemcpyHostToDevice);
 
-
+    int* perblockcpointsDev;
     err=cudaMalloc(&perblockcpointsDev,numberOfBlocks*sizeof(int));
     if (err != cudaSuccess)
     {
         printf("Error: %s\n", cudaGetErrorString(err));
     }
     cudaMemcpy(perblockcpointsDev,perblockcpoints,numberOfBlocks*sizeof(int),cudaMemcpyHostToDevice);
-
+    int *perblockqpointsDev;
     err=cudaMalloc(&perblockqpointsDev,numberOfBlocks*sizeof(int));
     if (err != cudaSuccess)
     {
         printf("Error: %s\n", cudaGetErrorString(err));
     }
     cudaMemcpy(perblockqpointsDev,perblockqpoints,numberOfBlocks*sizeof(int),cudaMemcpyHostToDevice);
-
+    Point* knn_Dev;
     err=cudaMalloc(&knn_Dev,numberOfqpoints*sizeof(Point));
     if (err != cudaSuccess)
     {
         printf("Error: %s\n", cudaGetErrorString(err));
     }
-    gridDim=dim3(dimOfGrid,dimOfGrid,dimOfGrid);
-
+    float* knnDist_Dev;
     err=cudaMalloc(&knnDist_Dev,numberOfqpoints*sizeof(float));
     if (err != cudaSuccess)
     {
         printf("Error: %s\n", cudaGetErrorString(err));
     }
-    gridDim=dim3(dimOfGrid,dimOfGrid,dimOfGrid);
 
-    knn<<<griDim,1024>>>(arrangecpointsDev,arrangeqpointsDev,perblockcpointsDev,perblockqpointsDev,perblockqpointsDev,startingpointDev_c,startingpointDev_q,knn_Dev,knnDist_dev)
-    getimeofday(&end_t,NULL);
+
+    knn<<< dim3(dimOfGrid,dimOfGrid,dimOfGrid) ,1024>>>(arrangecpointsDev,arrangeqpointsDev,perblockcpointsDev,perblockqpointsDev,startingpointDev_c,startingpointDev_q,knn_Dev,knnDist_Dev);
+    gettimeofday(&end_t,NULL);
     par_time = (double)((end_t.tv_usec - start_t.tv_usec)/1.0e6
-                        + endw_t.tv_sec - start_t.tv_sec);
+                        + end_t.tv_sec - start_t.tv_sec);
 
-    cudaMemcpy(knn_Dist,knnDist_dev,numberOfqpoints*sizeof(float),cudaMemcpyDeviceToHost);
-    cudaMemcpy(knn,knnDev,numberOfqpoints*sizeof(Point),cudaMemcpyDeviceToHost);
+    cudaMemcpy(knn_Dist,knnDist_Dev,numberOfqpoints*sizeof(float),cudaMemcpyDeviceToHost);
+    cudaMemcpy(knn,knn_Dev,numberOfqpoints*sizeof(Point),cudaMemcpyDeviceToHost);
 
     PrintKnn(arrangeqpoints,knn,numberOfqpoints);
 
@@ -327,10 +335,6 @@ int main(int argc,char** argv){
     cudaDeviceReset();
     return 0;
 }
-
-
-
-
 
 
 
