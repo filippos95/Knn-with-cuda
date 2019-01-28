@@ -204,7 +204,8 @@ void validation(struct Point* knn,struct Point* qpoints,struct  Point* cpoints,i
 
 int main(int argc,char** argv) {
 
-
+    struct timeval start_t,end_t;
+    gettimeofday(&start_t,NULL);
     int numberOfcPoints = 18;
     numberOfcPoints = pow(2, numberOfcPoints);
     int dimOfGrid = 4;
@@ -217,44 +218,41 @@ int main(int argc,char** argv) {
     struct Point2 *pointsctoblockDim = malloc(numberOfcPoints * sizeof(struct Point2));
 
     struct Point *knn = malloc(numberOfqpoints * sizeof(struct Point));
-    struct Point *arrangecpoints = malloc(numberOfcPoints * sizeof(struct Point));
+    struct Point *arrangecpoints=malloc(numberOfcPoints*sizeof(struct Point));
     //struct Point *arrangeqpoints=malloc(numberOfqpoints*sizeof(struct Point));
     int *pointsctoblock = malloc(numberOfcPoints * sizeof(int));
     int *pointsqtoblock = malloc(numberOfqpoints * sizeof(int));
     int *perblockcpoints = malloc(numberOfBlocks * sizeof(int));
     int *perblockqpoints = malloc(numberOfBlocks * sizeof(int));
-    int *startingpoint_c = malloc(numberOfBlocks * sizeof(int));
+    int *startingpoint_c=malloc(numberOfBlocks*sizeof(int));
     //int *startingpoint_q=malloc(numberOfBlocks* sizeof(int));
 
 
 
-    generatePoints(cpoints, numberOfcPoints, 1);
-    generatePoints(qpoints, numberOfqpoints, 2);
+    generatePoints(cpoints, numberOfcPoints,1);
+    generatePoints(qpoints, numberOfqpoints,2);
     //printf("-------------C  POINTS-----------\n");
-    PrintPoints(cpoints, numberOfcPoints);
+    PrintPoints(cpoints,numberOfcPoints);
     //printf("-------------Q POINTS------------\n");
-    PrintPoints(qpoints, numberOfqpoints);
+    PrintPoints(qpoints,numberOfqpoints);
 
     float block_length = ((float) 1) / ((float) dimOfGrid);
 
 //call function for fragmentation
     putPointsBlocks2(pointsctoblock, cpoints, perblockcpoints, numberOfcPoints, dimOfGrid, block_length);
-    putPointsBlocks(pointsqtoblock, qpoints, perblockqpoints, numberOfqpoints, dimOfGrid, block_length,
-                    pointsqtoblockDim);
-    arrangePointsbyblock(pointsctoblock, cpoints, arrangecpoints, numberOfcPoints, numberOfBlocks, perblockcpoints,
-                         startingpoint_c);
+    putPointsBlocks(pointsqtoblock, qpoints, perblockqpoints, numberOfqpoints, dimOfGrid, block_length,pointsqtoblockDim);
+    arrangePointsbyblock(pointsctoblock,cpoints,arrangecpoints,numberOfcPoints,numberOfBlocks,perblockcpoints,startingpoint_c);
     //arrangePointsbyblock(pointsqtoblock,qpoints,arrangeqpoints,numberOfqpoints,numberOfBlocks,perblockcpoints,startingpoint_q);
 
 
 //find the primary candidates of each queries
-    int count = 0;
     for (int q = 0; q < numberOfqpoints; q++) {
         int blockId;
         struct Point2 blockDim;
-        blockId = pointsqtoblock[q];
-        blockDim.x = pointsqtoblockDim[q].x;
-        blockDim.y = pointsqtoblockDim[q].y;
-        blockDim.z = pointsqtoblockDim[q].z;
+        blockId=pointsqtoblock[q];
+        blockDim.x=pointsqtoblockDim[q].x;
+        blockDim.y=pointsqtoblockDim[q].y;
+        blockDim.z=pointsqtoblockDim[q].z;
         //printf(" %d %d %d  \n",blockDim.x,blockDim.y,blockDim.z);
 
         //printf(" %d %d %d  \n",blockDim.x,blockDim.y,blockDim.z);
@@ -265,42 +263,41 @@ int main(int argc,char** argv) {
         float tempDistance;
         struct Point minCandidateCord;
         float minDistCand = 999;
-        for (int i = startingpoint_c[blockId]; (i < (startingpoint_c[blockId] + perblockcpoints[blockId])); i++) {
-            tempDistance = distanceOfPoints(qpoints[q], arrangecpoints[i]);
+        for (int i = startingpoint_c[blockId]; (i < (startingpoint_c[blockId]+perblockcpoints[blockId])); i++) {
+            tempDistance = distanceOfPoints(qpoints[q],arrangecpoints[i]);
             if (tempDistance < minDistCand) {
                 minDistCand = tempDistance;
-                minCandidateCord = arrangecpoints[i];
+                minCandidateCord= arrangecpoints[i];
 
             }
         }
         //printf("Point %d minCandidateCord  %f %f %f\n" ,q,minCandidateCord.x,minCandidateCord.y,minCandidateCord.z);
         float min_from_bounds = 999;
-        float tempDistancex = qpoints[q].x - (block_length * blockDim.x);
-        if ((tempDistancex > block_length - tempDistancex) && (blockDim.x < dimOfGrid - 1))
+        float tempDistancex = qpoints[q].x-(block_length * blockDim.x);
+        if ((tempDistancex > block_length - tempDistancex)&&(blockDim.x<dimOfGrid-1))
             tempDistancex = block_length - tempDistancex;
         min_from_bounds = tempDistancex;
-        float tempDistancey = qpoints[q].y - (block_length * blockDim.y);
-        if ((tempDistancey > block_length - tempDistancey) && (blockDim.y < dimOfGrid - 1))
+        float tempDistancey = qpoints[q].y-(block_length * blockDim.y);
+        if ((tempDistancey > block_length - tempDistancey)&&(blockDim.y<dimOfGrid-1))
             tempDistancey = block_length - tempDistancey;
         if (tempDistancey < min_from_bounds)
             min_from_bounds = tempDistancey;
 
 
-        float tempDistancez = qpoints[q].z - (block_length * blockDim.z);
-        if ((tempDistancez > block_length - tempDistancez) && (blockDim.z < dimOfGrid - 1))
+        float tempDistancez = qpoints[q].z-(block_length * blockDim.z);
+        if ((tempDistancez > block_length - tempDistancez)&&(blockDim.z<dimOfGrid-1))
             tempDistancez = block_length - tempDistancez;
         if (tempDistancez < min_from_bounds)
             min_from_bounds = tempDistancez;
 
 
         if (min_from_bounds < minDistCand) {
-            printf("%d\n", q);
+            printf("%d\n",q);
             neighborBlock neighbour;
             getNeighbourBlocks(dimOfGrid, blockDim, &neighbour);
             //printf("number of neighbors %d\n", neighbour.num_of_blocks);
             struct Point minCordNeig;
-            minCordNeig = searchMinDistanceblock(&neighbour, arrangecpoints, startingpoint_c, perblockcpoints,
-                                                 qpoints[q]);
+            minCordNeig = searchMinDistanceblock(&neighbour,arrangecpoints,startingpoint_c,perblockcpoints,qpoints[q]);
             if (distanceOfPoints(minCordNeig, qpoints[q]) < minDistCand)
                 minCandidateCord = minCordNeig;
 
@@ -311,10 +308,10 @@ int main(int argc,char** argv) {
     }
 
 
-    printf("--------------------------------------K-nn---------------------------------\n");
-    PrintKnn(qpoints, knn, numberOfqpoints);
-
-    validation(knn, qpoints, cpoints, numberOfqpoints);
+    //printf("--------------------------------------K-nn---------------------------------\n");
+    //PrintKnn(qpoints, knn, numberOfqpoints);
+    getimeofday(&end_t,NULL);
+    validation(knn,qpoints,cpoints,numberOfqpoints);
     free(cpoints);
     free(qpoints);
     free(perblockcpoints);
@@ -327,4 +324,5 @@ int main(int argc,char** argv) {
     free(startingpoint_c);
     free(arrangecpoints);
     return 0;
+
 }
