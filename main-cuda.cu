@@ -19,6 +19,8 @@ typedef  struct  {
 }Point;
 
 
+
+
 __global__ void knn(float* allcPoints,float* allqPoints,int * perBlockcPoints,int* perBlockqPoints,int* startingPointc,int* startingPointq,int* knn,int* knn){
 
     __shared__ Point shrMem[1024];
@@ -229,7 +231,8 @@ int main(int argc,char** argv){
     //PrintPoints(cpoints,numberOfcPoints);
     //printf("-------------Q POINTS------------\n");
     //PrintPoints(qpoints,numberOfqpoints);
-
+    struct timeval start_t,end_t;
+    gettimeofday(&start_t,NULL);
     float block_length = ((float) 1) / ((float) dimOfGrid);
 
     //call function for fragmentation
@@ -299,6 +302,9 @@ int main(int argc,char** argv){
     gridDim=dim3(dimOfGrid,dimOfGrid,dimOfGrid);
 
     knn<<<griDim,1024>>>(arrangecpointsDev,arrangeqpointsDev,perblockcpointsDev,perblockqpointsDev,perblockqpointsDev,startingpointDev_c,startingpointDev_q,knn_Dev,knnDist_dev)
+    getimeofday(&end_t,NULL);
+    par_time = (double)((end_t.tv_usec - start_t.tv_usec)/1.0e6
+                        + endw_t.tv_sec - start_t.tv_sec);
 
     cudaMemcpy(knn_Dist,knnDist_dev,numberOfqpoints*sizeof(float),cudaMemcpyDeviceToHost);
     cudaMemcpy(knn,knnDev,numberOfqpoints*sizeof(Point),cudaMemcpyDeviceToHost);
@@ -314,9 +320,7 @@ int main(int argc,char** argv){
     free(perblockqpoints);
     free(startingpoint_c);
     free(startingpoint_q);
-
-
-
+    
     cudaDeviceReset();
     return 0;
 }

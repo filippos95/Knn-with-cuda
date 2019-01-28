@@ -205,6 +205,7 @@ void validation(struct Point* knn,struct Point* qpoints,struct  Point* cpoints,i
 int main(int argc,char** argv) {
 
     struct timeval start_t,end_t;
+    double ser_time;
     gettimeofday(&start_t,NULL);
     int numberOfcPoints = 18;
     numberOfcPoints = pow(2, numberOfcPoints);
@@ -311,6 +312,8 @@ int main(int argc,char** argv) {
     //printf("--------------------------------------K-nn---------------------------------\n");
     //PrintKnn(qpoints, knn, numberOfqpoints);
     getimeofday(&end_t,NULL);
+    ser_time = (double)((end_t.tv_usec - start_t.tv_usec)/1.0e6
+                           + endw_t.tv_sec - start_t.tv_sec);
     validation(knn,qpoints,cpoints,numberOfqpoints);
     free(cpoints);
     free(qpoints);
