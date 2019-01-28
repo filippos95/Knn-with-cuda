@@ -21,7 +21,7 @@ typedef  struct  {
 
 
 
-__global__ void knn(float* allcPoints,float* allqPoints,int * perBlockcPoints,int* perBlockqPoints,int* startingPointc,int* startingPointq,int* knn,int* knn){
+__global__ void knn(float* allcPoints,float* allqPoints,int * perBlockcPoints,int* perBlockqPoints,int* startingPointc,int* startingPointq,int* knn_dist,int* knn){
 
     __shared__ Point shrMem[1024];
     int blockId=blockIdx.x+blockIdx.y*gridDim.x+blockIdx.z*gridDim.x*gridDim.y;
@@ -47,7 +47,7 @@ __global__ void knn(float* allcPoints,float* allqPoints,int * perBlockcPoints,in
         qpoint = allqpoints[q];
         float tempDist = 0;
         float minCanDist=999;
-        struct Point minCanPoint;
+        Point minCanPoint;
         for (int c = 0; c < number_cpoints; c++) {
 
             tempDist = pow((shrMem[c].x - qpoint.x), 2) + pow((shrMem[c].y - qpoint.y), 2) +
@@ -93,7 +93,7 @@ __global__ void knn(float* allcPoints,float* allqPoints,int * perBlockcPoints,in
                         int tempx = blockIdx.x+i;
                         int tempy = blockIdx.y+j;
                         int tempz = blockIdx.z+k;
-                        if (!(tempx < 0 | tempy < 0 | tempz < 0 | tempx >= gridDim | tempz >= gridDim | tempy >= gridDim)) {
+                        if (!(tempx < 0 | tempy < 0 | tempz < 0 | tempx >= gridDim.x | tempz >= gridDim.y | tempy >= gridDim.z)) {
                             neighbors[size]=tempx+tempy*gridDim+tempz*gridDim*gridDim;
                             size++;
                         }
@@ -165,7 +165,7 @@ void generatePoints( struct Point* arr ,int number,int seed){
 
 }
 
-float distanceOfPoints( struct Point p1,struct Point p2){
+float distanceOfPoints(  Point p1, Point p2){
     float dist=0;
     dist=pow(p1.x-p2.x,2)+pow(p1.y-p2.y,2)+pow(p1.z-p2.z,2);
     dist=sqrt(dist);
@@ -173,7 +173,7 @@ float distanceOfPoints( struct Point p1,struct Point p2){
 }
 
 
-void putPointsBlocks(int *pointsToBlock,struct Point* allPoints,int* perBlockPoints,int numberOfPoints,int gridDim,float blockLength,struct Point2* pointsToBlockDim) {
+void putPointsBlocks(int *pointsToBlock, Point* allPoints,int* perBlockPoints,int numberOfPoints,int gridDim,float blockLength) {
     int blockId=0;
     for (int i=0; i<numberOfPoints;i++){
 
@@ -186,7 +186,7 @@ void putPointsBlocks(int *pointsToBlock,struct Point* allPoints,int* perBlockPoi
 
 
 
-void arrangePointsbyblock(int *pointsToBlock,struct Point* allPoints,struct Point* newPoints,int numberOfPoints,int numberOfBlocks,int* perBlockPoints,int* startingPoint){
+void arrangePointsbyblock(int* pointsToBlock, Point* allPoints, Point* newPoints,int numberOfPoints,int numberOfBlocks,int* perBlockPoints,int* startingPoint){
     int k=0;
     int sum=0;
     for(int j=0;j<numberOfBlocks;j++){
@@ -215,15 +215,16 @@ int main(int argc,char** argv){
     struct Point *cpoints = malloc(numberOfcPoints * sizeof(struct Point));
     struct Point *qpoints = malloc(numberOfqpoints * sizeof(struct Point));
 
-    //struct Point *knn = malloc(numberOfqpoints * sizeof( Point));
-    struct Point *arrangecpoints=malloc(numberOfcPoints*sizeof( Point));
-    struct Point *arrangeqpoints==malloc(numberOfqPoints*sizeof(Point));
+    Point *knn = malloc(numberOfqpoints * sizeof( Point));
+    Point *arrangecpoints=malloc(numberOfcPoints*sizeof( Point));
+    Point *arrangeqpoints==malloc(numberOfqPoints*sizeof(Point));
     int *pointsctoblock = malloc(numberOfcPoints * sizeof(int));
     int *pointsqtoblock = malloc(numberOfqpoints * sizeof(int));
     int *perblockcpoints = malloc(numberOfBlocks * sizeof(int));
     int *perblockqpoints = malloc(numberOfBlocks * sizeof(int));
     int *startingpoint_c=malloc(numberOfBlocks*sizeof(int));
     int *startingpoint_q=malloc(numberOfBlocks*sizeof(int));
+    float *knn_Dist=malloc(numberOfqpoints*sizeof(float))
 
     generatePoints(cpoints, numberOfcPoints,1);
     generatePoints(qpoints, numberOfqpoints,2);
@@ -237,7 +238,7 @@ int main(int argc,char** argv){
 
     //call function for fragmentation
     putPointsBlocks(pointsctoblock, cpoints, perblockcpoints, numberOfcPoints, dimOfGrid, block_length);
-    putPointsBlocks(pointsqtoblock, qpoints, perblockqpoints, numberOfqpoints, dimOfGrid, block_length,pointsqtoblockDim);
+    putPointsBlocks(pointsqtoblock, qpoints, perblockqpoints, numberOfqpoints, dimOfGrid, block_length);
     arrangePointsbyblock(pointsctoblock,cpoints,arrangecpoints,numberOfcPoints,numberOfBlocks,perblockcpoints,startingpoint_c);
     arrangePointsbyblock(pointsqtoblock,qpoints,arrangeqpoints,numberOfqpoints,numberOfBlocks,perblockqpoints,startingpoint_q);
     free(pointsctoblock);
@@ -309,7 +310,7 @@ int main(int argc,char** argv){
     cudaMemcpy(knn_Dist,knnDist_dev,numberOfqpoints*sizeof(float),cudaMemcpyDeviceToHost);
     cudaMemcpy(knn,knnDev,numberOfqpoints*sizeof(Point),cudaMemcpyDeviceToHost);
 
-    PrintKnn(qpoints,knn,numberOfqpoints);
+    PrintKnn(arrangeqpoints,knn,numberOfqpoints);
 
 
     free(cpoints);
@@ -320,7 +321,9 @@ int main(int argc,char** argv){
     free(perblockqpoints);
     free(startingpoint_c);
     free(startingpoint_q);
-    
+    free(knn);
+    free(knn_Dist);
+
     cudaDeviceReset();
     return 0;
 }
