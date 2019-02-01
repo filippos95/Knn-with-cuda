@@ -26,7 +26,7 @@ typedef  struct  {
 
 
 
-__global__ void knn(Point* allcPoints,Point* allqPoints,int* perBlockcPoints,int* perBlockqPoints,int* startingPointc,int* startingPointq,Point* knn,float* knn_dist){
+__global__ void knn_search(Point* allcPoints,Point* allqPoints,int* perBlockcPoints,int* perBlockqPoints,int* startingPointc,int* startingPointq,Point* knn,float* knn_dist){
 
     __shared__ Point shrMem[1024];
     int blockId=blockIdx.x+blockIdx.y*gridDim.x+blockIdx.z*gridDim.x*gridDim.y;
@@ -41,7 +41,7 @@ __global__ void knn(Point* allcPoints,Point* allqPoints,int* perBlockcPoints,int
 
     if(i<number_cpoints){
         c=i+startingPointc[blockId];
-        shrMem[threadIdx.x]=allcPoints[c];
+        shrMem[i]=allcPoints[c];
 
     }
     __syncthreads();
@@ -90,24 +90,30 @@ __global__ void knn(Point* allcPoints,Point* allqPoints,int* perBlockcPoints,int
 
 
     int neighbors[27];
-    int size=0;
+    int size = 0;
     for (int i = -1; i < 2; i++) {
         for (int j = -1; j < 2; j++) {
             for (int k = -1; k < 2; k++) {
                 if (!(i == 0 & j == 0 & k == 0)) {
-                    int tempx = blockIdx.x+i;
-                    int tempy = blockIdx.y+j;
-                    int tempz = blockIdx.z+k;
-                    if (!(tempx < 0 | tempy < 0 | tempz < 0 | tempx >= gridDim.x | tempz >= gridDim.y | tempy >= gridDim.z))                          {
-                        neighbors[size]=tempx+tempy*gridDim.x+tempz*gridDim.x*gridDim.y;
+                    int tempx = blockIdx.x + i;
+                    int tempy = blockIdx.y + j;
+                    int tempz = blockIdx.z + k;
+                    if (!(tempx < 0 | tempy < 0 | tempz < 0 | tempx >= gridDim.x | tempz >= gridDim.y |
+                          tempy >= gridDim.z)) {
+                        neighbors[size] = tempx + tempy * gridDim.x + tempz * gridDim.x * gridDim.y;
                         size++;
                     }
                 }
             }
         }
     }
+
+
+
+
     float minNeigDist=999;
     Point minNeig;
+
     for (int k=0;k<size;k++){
 
         int neighborId=neighbors[k];
@@ -123,7 +129,7 @@ __global__ void knn(Point* allcPoints,Point* allqPoints,int* perBlockcPoints,int
             q=i+startingPointq[neighborId];
             qpoint=allqPoints[q];
             float tempDist;
-            for(int k=0;k<number_qpoints;k++){
+            for(int k=0;k<number_cpoints;k++){
 
                 tempDist = pow((shrMem[k].x - qpoint.x), 2) + pow((shrMem[k].y - qpoint.y), 2) +
                            pow((shrMem[k].z - qpoint.z), 2);
@@ -134,6 +140,7 @@ __global__ void knn(Point* allcPoints,Point* allqPoints,int* perBlockcPoints,int
                     minNeig =shrMem[k];
                 }
             }
+        _syncthreads();
         }
     }
     if(i<number_qpoints) {
@@ -310,7 +317,7 @@ int main(int argc,char** argv){
     }
 
 
-    knn<<<dim3(dimOfGrid,dimOfGrid,dimOfGrid) ,1024>>>(arrangecpointsDev,arrangeqpointsDev,perblockcpointsDev,perblockqpointsDev,startingpointDev_c,startingpointDev_q,knn_Dev,knnDist_Dev);
+    knn_search<<<dim3(dimOfGrid,dimOfGrid,dimOfGrid),1024>>>(arrangecpointsDev,arrangeqpointsDev,perblockcpointsDev,perblockqpointsDev,startingpointDev_c,startingpointDev_q,knn_Dev,knnDist_Dev);
     gettimeofday(&end_t,NULL);
     par_time = (double)((end_t.tv_usec - start_t.tv_usec)/1.0e6
                         + end_t.tv_sec - start_t.tv_sec);
