@@ -28,7 +28,8 @@ typedef  struct  {
 
 __global__ void knn_search(Point* allcPoints,Point* allqPoints,int* perBlockcPoints,int* perBlockqPoints,int* startingPointc,int* startingPointq,Point* knn,float* knn_dist){
 
-    __shared__ Point shrMem[1024];
+    
+    __shared__ Point shrMem[2028];
     int blockId=blockIdx.x+blockIdx.y*gridDim.x+blockIdx.z*gridDim.x*gridDim.y;
 
     Point qpoint;
@@ -36,22 +37,20 @@ __global__ void knn_search(Point* allcPoints,Point* allqPoints,int* perBlockcPoi
     int c,q;
     int number_qpoints=perBlockqPoints[blockId];
     int number_cpoints=perBlockcPoints[blockId];
-    int i=threadIdx.x;
+    int i;
 
-
-    if(i<number_cpoints){
-        c=i+startingPointc[blockId];
-        shrMem[i]=allcPoints[c];
-
-    }
+for(i=threadIdx.x;i<number_cpoints;i+=blockDim.x) {
+    c = i + startingPointc[blockId];
+    shrMem[i] = allcPoints[c];
+}
     __syncthreads();
 
-    if(i<number_qpoints) {
+ for(i=threadIdx.x;i<number_qpoints;i+=blocDimx.x){
 
         q = i + startingPointq[blockId];
         qpoint = allqPoints[q];
         float tempDist = 0;
-        float minCanDist=999;
+        float minCanDist = 999;
         Point minCanPoint;
         for (int c = 0; c < number_cpoints; c++) {
 
@@ -67,8 +66,8 @@ __global__ void knn_search(Point* allcPoints,Point* allqPoints,int* perBlockcPoi
             }
         }
 
-        knn[q]=minCanPoint;
-        knn_dist[q]=minCanDist;
+        knn[q] = minCanPoint;
+        knn_dist[q] = minCanDist;
     }
 
     //float minBounds = 999;
@@ -120,12 +119,12 @@ __global__ void knn_search(Point* allcPoints,Point* allqPoints,int* perBlockcPoi
         number_cpoints=perBlockcPoints[neighborId];
         number_qpoints=perBlockqPoints[neighborId];
 
-        if(i<number_cpoints){
+       for(i=threadIdx.x;i<number_cpoints;i+blockDim.x){
             c=i+startingPointc[neighborId];
             shrMem[i]=allcPoints[c];
         }
         __syncthreads();
-        if(i<number_qpoints){
+        for(i=threadIdx.x;i<number_qpoints;i+blockDim.x){
             q=i+startingPointq[neighborId];
             qpoint=allqPoints[q];
             float tempDist;
@@ -140,10 +139,9 @@ __global__ void knn_search(Point* allcPoints,Point* allqPoints,int* perBlockcPoi
                     minNeig =shrMem[k];
                 }
             }
-        _syncthreads();
         }
     }
-    if(i<number_qpoints) {
+    if(threadIdx.x<number_qpoints) {
         if (minNeigDist < knn_dist[q]) {
             knn_dist[q] = minNeigDist;
             knn[q] = minNeig;
@@ -324,8 +322,8 @@ int main(int argc,char** argv){
 
     cudaMemcpy(knn_Dist,knnDist_Dev,numberOfqpoints*sizeof(float),cudaMemcpyDeviceToHost);
     cudaMemcpy(knn,knn_Dev,numberOfqpoints*sizeof(Point),cudaMemcpyDeviceToHost);
-
-    PrintKnn(arrangeqpoints,knn,numberOfqpoints);
+    printf("Time to )
+    //PrintKnn(arrangeqpoints,knn,numberOfqpoints);
 
 
     free(cpoints);
