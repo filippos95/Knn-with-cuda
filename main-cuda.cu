@@ -45,7 +45,7 @@ for(i=threadIdx.x;i<number_cpoints;i+=blockDim.x) {
 }
     __syncthreads();
 
- for(i=threadIdx.x;i<number_qpoints;i+=blocDim.x){
+ for(i=threadIdx.x;i<number_qpoints;i+=blockDim.x){
 
         q = i + startingPointq[blockId];
         qpoint = allqPoints[q];
@@ -124,7 +124,7 @@ for(i=threadIdx.x;i<number_cpoints;i+=blockDim.x) {
             shrMem[i]=allcPoints[c];
         }
         __syncthreads();
-        for(i=threadIdx.x;i<number_qpoints;i+blockDim.x){
+        for(i=threadIdx.x;i<number_qpoints;i=i+blockDim.x){
             q=i+startingPointq[neighborId];
             qpoint=allqPoints[q];
             float tempDist;
