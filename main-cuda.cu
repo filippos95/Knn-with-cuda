@@ -28,7 +28,7 @@ typedef  struct  {
 
 __global__ void knn_search(Point* allcPoints,Point* allqPoints,int* perBlockcPoints,int* perBlockqPoints,int* startingPointc,int* startingPointq,Point* knn,float* knn_dist){
 
-    
+
     __shared__ Point shrMem[2028];
     int blockId=blockIdx.x+blockIdx.y*gridDim.x+blockIdx.z*gridDim.x*gridDim.y;
 
@@ -45,7 +45,7 @@ for(i=threadIdx.x;i<number_cpoints;i+=blockDim.x) {
 }
     __syncthreads();
 
- for(i=threadIdx.x;i<number_qpoints;i+=blocDimx.x){
+ for(i=threadIdx.x;i<number_qpoints;i+=blocDim.x){
 
         q = i + startingPointq[blockId];
         qpoint = allqPoints[q];
@@ -119,7 +119,7 @@ for(i=threadIdx.x;i<number_cpoints;i+=blockDim.x) {
         number_cpoints=perBlockcPoints[neighborId];
         number_qpoints=perBlockqPoints[neighborId];
 
-       for(i=threadIdx.x;i<number_cpoints;i+blockDim.x){
+       for(i=threadIdx.x;i<number_cpoints;i=i+blockDim.x){
             c=i+startingPointc[neighborId];
             shrMem[i]=allcPoints[c];
         }
@@ -139,13 +139,11 @@ for(i=threadIdx.x;i<number_cpoints;i+=blockDim.x) {
                     minNeig =shrMem[k];
                 }
             }
+            if (minNeigDist < knn_dist[q]) {
+                knn_dist[q] = minNeigDist;
+                knn[q] = minNeig;
         }
-    }
-    if(threadIdx.x<number_qpoints) {
-        if (minNeigDist < knn_dist[q]) {
-            knn_dist[q] = minNeigDist;
-            knn[q] = minNeig;
-        }
+     }
     }
 }
 
