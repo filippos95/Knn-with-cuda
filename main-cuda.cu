@@ -129,7 +129,8 @@ for(j=threadIdx.x;j<number_cpoints;j=blockDim.x+j) {
         for(i=threadIdx.x;i<number_qpoints;i=i+blockDim.x){
             q=i+startingPointq[blockId];
             qpoint=allqPoints[q];
-            float tempDist;
+            float minNeigDist=999;
+            Point minNeig;
             for(int k=0;k<number_cpoints;k++){
 
                 tempDist = pow((shrMem[k].x - qpoint.x), 2) + pow((shrMem[k].y - qpoint.y), 2) +
