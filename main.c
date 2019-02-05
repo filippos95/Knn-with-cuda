@@ -236,9 +236,9 @@ int main(int argc,char** argv) {
     generatePoints(cpoints, numberOfcPoints,1);
     generatePoints(qpoints, numberOfqpoints,2);
     //printf("-------------C  POINTS-----------\n");
-    PrintPoints(cpoints,numberOfcPoints);
+    //PrintPoints(cpoints,numberOfcPoints);
     //printf("-------------Q POINTS------------\n");
-    PrintPoints(qpoints,numberOfqpoints);
+    //PrintPoints(qpoints,numberOfqpoints);
 
     float block_length = ((float) 1) / ((float) dimOfGrid);
 
