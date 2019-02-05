@@ -9,6 +9,8 @@
 #include <time.h>
 #include <math.h>
 #include <string.h>
+#include <cuda.h>
+
 
 
 
@@ -311,10 +313,11 @@ int main(int argc,char** argv) {
 
     //printf("--------------------------------------K-nn---------------------------------\n");
     //PrintKnn(qpoints, knn, numberOfqpoints);
-    getimeofday(&end_t,NULL);
+    gettimeofday(&end_t,NULL);
     ser_time = (double)((end_t.tv_usec - start_t.tv_usec)/1.0e6
                            + endw_t.tv_sec - start_t.tv_sec);
-    validation(knn,qpoints,cpoints,numberOfqpoints);
+    printf("Serial time of calculation :%f sec\n",ser_time)
+    //validation(knn,qpoints,cpoints,numberOfqpoints);
     free(cpoints);
     free(qpoints);
     free(perblockcpoints);
