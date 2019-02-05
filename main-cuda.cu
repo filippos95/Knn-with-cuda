@@ -25,10 +25,10 @@ typedef  struct  {
 
 
 
-__global__ void knn_search(Point* allcPoints,Point* allqPoints,int* perBlockcPoints,int* perBlockqPoints,int* startingPointc,int* startingPointq,Point* knn,float* knn_dist,int numberOfshare){
+__global__ void knn_search(Point* allcPoints,Point* allqPoints,int* perBlockcPoints,int* perBlockqPoints,int* startingPointc,int* startingPointq,Point* knn,float* knn_dist){
 
 
-    __shared__ Point shrMem[numberOfshare];
+    __shared__ Point shrMem[4000];
     int blockId=blockIdx.x+blockIdx.y*gridDim.x+blockIdx.z*gridDim.x*gridDim.y;
 
     Point qpoint;
@@ -288,8 +288,7 @@ int main(int argc,char** argv){
         printf("Error: %s\n", cudaGetErrorString(err));
     }
 
-    int numberOfshare=(numberOfqpoints/numberOfBlocks)*2;
-    knn_search<<<dim3(dimOfGrid,dimOfGrid,dimOfGrid),1024>>>(arrangecpointsDev,arrangeqpointsDev,perblockcpointsDev,perblockqpointsDev,startingpointDev_c,startingpointDev_q,knn_Dev,knnDist_Dev,numberOfshare);
+    knn_search<<<dim3(dimOfGrid,dimOfGrid,dimOfGrid),1024>>>(arrangecpointsDev,arrangeqpointsDev,perblockcpointsDev,perblockqpointsDev,startingpointDev_c,startingpointDev_q,knn_Dev,knnDist_Dev);
     gettimeofday(&end_t,NULL);
     par_time = (double)((end_t.tv_usec - start_t.tv_usec)/1.0e6
                         + end_t.tv_sec - start_t.tv_sec);
@@ -320,7 +319,6 @@ int main(int argc,char** argv){
     cudaFree(startingpoint_q);
     cudaFree(arrangecpointsDev);
     cudaFree(arrangeqpointsDev);
-
 
 
 
