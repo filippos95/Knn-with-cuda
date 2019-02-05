@@ -320,8 +320,6 @@ int main(int argc,char** argv){
     cudaFree(arrangecpointsDev);
     cudaFree(arrangeqpointsDev);
 
-
-
 }
 
 

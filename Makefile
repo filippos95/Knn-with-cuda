@@ -1,22 +1,9 @@
-GCC = gcc
-ICCFLAGS =
-#OPENMPICCFLAGS = -qopenmp
-#PTHREADSICCFLAGS = -pthread
-
-#GCC = gcc
-#GCCFLAGS = -fcilkplus -O3
-#OPENMPGCCCFLAGS = -fopenmp
-
 CMAIN = ex3
-#NPROCS = 4
 
+parallel: nvcc -arch=sm_70 -o cuda-knn-parallel main-cuda.cu -run
 
-all: main.o
-	$(GCC) $(GCCFLAGS) $^ -o $(CMAIN)
-
-main.o: main.c
-	$(GCC) -c $(ICCFLAGS) $^
+serial: nvcc -arch=sm_70 -o cuda-knn-serial main.cu -run
 
 
 clean:
-	rm -f *.o *~ $(CMAIN)
+	rm -f cuda-knn-parallel cuda-knn-serial
