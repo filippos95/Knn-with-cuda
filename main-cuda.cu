@@ -15,13 +15,13 @@
 #include <sys/time.h>
 
 
+
 typedef  struct  {
     float x;
     float y;
     float z;
 
 }Point;
-
 
 
 
@@ -70,22 +70,6 @@ __global__ void knn_search(Point* allcPoints,Point* allqPoints,int* perBlockcPoi
         knn_dist[q] = minCanDist;
     }
 
-    //float minBounds = 999;
-    //float tempDistancex = qpoints[q].x-(block_length * blockId.x);
-    //if ((tempDistancex > block_length - tempDistancex)&&(blockId.x<gridDim.x-1))
-    //  tempDistancex = block_length - tempDistancex;
-    //min_from_bounds = tempDistancex;
-    //float tempDistancey = qpoints[q].y-(block_length * blockId.y);
-    //if ((tempDistancey > block_length - tempDistancey)&&(blockId.y<gridDim.y-1))
-    //   tempDistancey = block_length - tempDistancey;
-    //if (tempDistancey < min_from_bounds)
-    //min_from_bounds = tempDistancey;
-
-    // float tempDistancez = qpoints[q].z-(block_length * blockDim.z);
-    //if ((tempDistancez > block_length - tempDistancez)&&(blockId.z<gridDim.z-1))
-    //tempDistancez = block_length - tempDistancez;
-    // if (tempDistancez < min_from_bounds)
-    // min_from_bounds = tempDistancez;
 
 
     int neighbors[27];
@@ -106,9 +90,6 @@ __global__ void knn_search(Point* allcPoints,Point* allqPoints,int* perBlockcPoi
             }
         }
     }
-
-
-
 
     //float minNeigDist=999;
     //Point minNeig;
@@ -174,13 +155,6 @@ void generatePoints(Point* arr ,int number,int seed){
 
     }
 
-}
-
-float distanceOfPoints(  Point p1, Point p2){
-    float dist=0;
-    dist=pow(p1.x-p2.x,2)+pow(p1.y-p2.y,2)+pow(p1.z-p2.z,2);
-    dist=sqrt(dist);
-    return dist;
 }
 
 
@@ -338,7 +312,16 @@ int main(int argc,char** argv){
     free(knn);
     free(knn_Dist);
 
-    cudaDeviceReset();
+    cudaFree(knn_Dev);
+    cudaFree(knnDist_Dev);
+    cudaFree(perblockqpointsDev);
+    cudaFree(perblockcpointsDev);
+    cudaFree(startingpoint_c);
+    cudaFree(startingpoint_q);
+    cudaFree(arrangecpointsDev);
+    cudaFree(arrangeqpointsDev);
+
+
 
 
 }
