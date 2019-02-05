@@ -1,5 +1,4 @@
 
-
 // Created by Filippos Kasioulis on 13/01/2019.
 //
 
@@ -10,6 +9,8 @@
 #include <math.h>
 #include <string.h>
 #include <cuda.h>
+#include <sys/time.h>
+
 
 
 
@@ -209,7 +210,7 @@ int main(int argc,char** argv) {
     struct timeval start_t,end_t;
     double ser_time;
     gettimeofday(&start_t,NULL);
-    int numberOfcPoints = 18;
+    int numberOfcPoints = 20;
     numberOfcPoints = pow(2, numberOfcPoints);
     int dimOfGrid = 4;
     dimOfGrid = pow(2, dimOfGrid);
@@ -295,7 +296,6 @@ int main(int argc,char** argv) {
 
 
         if (min_from_bounds < minDistCand) {
-            printf("%d\n",q);
             neighborBlock neighbour;
             getNeighbourBlocks(dimOfGrid, blockDim, &neighbour);
             //printf("number of neighbors %d\n", neighbour.num_of_blocks);
@@ -315,8 +315,8 @@ int main(int argc,char** argv) {
     //PrintKnn(qpoints, knn, numberOfqpoints);
     gettimeofday(&end_t,NULL);
     ser_time = (double)((end_t.tv_usec - start_t.tv_usec)/1.0e6
-                           + endw_t.tv_sec - start_t.tv_sec);
-    printf("Serial time of calculation :%f sec\n",ser_time)
+                        + end_t.tv_sec - start_t.tv_sec);
+    printf("Serial time of calculation :%f sec\n",ser_time);
     //validation(knn,qpoints,cpoints,numberOfqpoints);
     free(cpoints);
     free(qpoints);
