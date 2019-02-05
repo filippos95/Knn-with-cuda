@@ -1,7 +1,6 @@
 
 
 
-
 //
 // Created by Filippos Kasioulis on 25/01/2019.
 //
@@ -29,24 +28,24 @@ typedef  struct  {
 __global__ void knn_search(Point* allcPoints,Point* allqPoints,int* perBlockcPoints,int* perBlockqPoints,int* startingPointc,int* startingPointq,Point* knn,float* knn_dist){
 
 
-    __shared__ Point shrMem[2028];
+    __shared__ Point shrMem[2000];
     int blockId=blockIdx.x+blockIdx.y*gridDim.x+blockIdx.z*gridDim.x*gridDim.y;
 
     Point qpoint;
-    Point cpoint;
+    //Point cpoint;
     int c,q;
     int number_qpoints=perBlockqPoints[blockId];
     int number_cpoints=perBlockcPoints[blockId];
     int i;
     int j;
 
-for(j=threadIdx.x;j<number_cpoints;j=blockDim.x+j) {
-    c = j + startingPointc[blockId];
-    shrMem[j] = allcPoints[c];
-}
+    for(j=threadIdx.x;j<number_cpoints;j=blockDim.x+j) {
+        c = j + startingPointc[blockId];
+        shrMem[j] = allcPoints[c];
+    }
     __syncthreads();
 
- for(i=threadIdx.x;i<number_qpoints;i+=blockDim.x){
+    for(i=threadIdx.x;i<number_qpoints;i+=blockDim.x){
 
         q = i + startingPointq[blockId];
         qpoint = allqPoints[q];
@@ -69,7 +68,6 @@ for(j=threadIdx.x;j<number_cpoints;j=blockDim.x+j) {
 
         knn[q] = minCanPoint;
         knn_dist[q] = minCanDist;
-        //printf("%f",knn[q]);
     }
 
     //float minBounds = 999;
@@ -112,8 +110,8 @@ for(j=threadIdx.x;j<number_cpoints;j=blockDim.x+j) {
 
 
 
-    float minNeigDist=999;
-    Point minNeig;
+    //float minNeigDist=999;
+    //Point minNeig;
 
     for (int k=0;k<size;k++){
 
@@ -121,7 +119,7 @@ for(j=threadIdx.x;j<number_cpoints;j=blockDim.x+j) {
         number_cpoints=perBlockcPoints[neighborId];
 
 
-       for(i=threadIdx.x;i<number_cpoints;i=i+blockDim.x){
+        for(i=threadIdx.x;i<number_cpoints;i=i+blockDim.x){
             c=i+startingPointc[neighborId];
             shrMem[i]=allcPoints[c];
         }
@@ -131,6 +129,7 @@ for(j=threadIdx.x;j<number_cpoints;j=blockDim.x+j) {
             qpoint=allqPoints[q];
             float minNeigDist=999;
             Point minNeig;
+            float tempDist;
             for(int k=0;k<number_cpoints;k++){
 
                 tempDist = pow((shrMem[k].x - qpoint.x), 2) + pow((shrMem[k].y - qpoint.y), 2) +
@@ -145,8 +144,8 @@ for(j=threadIdx.x;j<number_cpoints;j=blockDim.x+j) {
             if (minNeigDist < knn_dist[q]) {
                 knn_dist[q] = minNeigDist;
                 knn[q] = minNeig;
+            }
         }
-     }
     }
 }
 
@@ -218,9 +217,9 @@ void arrangePointsbyblock(int* pointsToBlock, Point* allPoints, Point* newPoints
 
 int main(int argc,char** argv){
 
-    int numberOfcPoints = 22;
+    int numberOfcPoints = 24;
     numberOfcPoints = pow(2, numberOfcPoints);
-    int dimOfGrid = 6;
+    int dimOfGrid = 4;
     dimOfGrid = pow(2, dimOfGrid);
     int numberOfBlocks = pow(dimOfGrid, 3);
     int numberOfqpoints = numberOfcPoints;
@@ -324,9 +323,10 @@ int main(int argc,char** argv){
     cudaMemcpy(knn_Dist,knnDist_Dev,numberOfqpoints*sizeof(float),cudaMemcpyDeviceToHost);
     cudaMemcpy(knn,knn_Dev,numberOfqpoints*sizeof(Point),cudaMemcpyDeviceToHost);
 
-    PrintKnn(arrangeqpoints,knn,numberOfqpoints);
+    //printf(" TEST %s\n",(pass3) ? "PASSed" : "FAILed");
+    printf("Parallel with cuda clock time: %f sec\n", par_time);
 
-
+    //PrintKnn(arrangeqpoints,knn,numberOfqpoints);
     free(cpoints);
     free(qpoints);
     free(arrangecpoints);
@@ -340,9 +340,8 @@ int main(int argc,char** argv){
 
     cudaDeviceReset();
 
-    return 0;
-}
 
+}
 
 
 
